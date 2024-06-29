@@ -14,10 +14,19 @@ The following Linux mechanisms were used in the project:
 
 ![Architecture overview](documentation/images/diagram_git.png)
 
+## Install
+Start by cloning the repository:
+
+```shell
+git clone https://github.com/GordonNotCole/Linux-HID-over-network.git
+cd Linux-HID-over-network/
+```
+
 ## Using Linux HID over network
 
 ### Server
 It is responsible for receiving events from the sender (client) to the port and registers them in its file descriptors.
+
 You need to specify the port for receiving I/O device events and, separated by a space, the event files where to redirect them:
 
 ```shell
@@ -28,6 +37,7 @@ sudo ./receiver 8000 event2 event4
 
 ### Client
 It is responsible for sending events of its I/O devices to the server (receiver).
+
 You need to specify the server address and port for receiving I/O device events and, separated by a space, the event files that need to be redirected:
 
 ```shell
