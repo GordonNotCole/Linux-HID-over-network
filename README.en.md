@@ -1,7 +1,5 @@
-# Linux-HID-over-network
-Forwarding user input device events from one device to another.
 <h1 align="center" style="border-bottom: none">
-    <a href="https://prometheus.io" target="_blank"><img alt="Linux HID over network"></a><br>Linux HID over network
+	Linux HID over network
 </h1>
 
 Linux HID over network, a project that was created to forward events of user input devices (mouse, keyboard, touchscreen, etc.) from one device to another.

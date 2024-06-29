@@ -1,7 +1,5 @@
-# Linux-HID-over-network
-Пересылка событий пользовательского устройства ввода с одного устройства на другое.
 <h1 align="center" style="border-bottom: none">
-    <a href="https://prometheus.io" target="_blank"><img alt="Linux HID over network"></a><br>Linux HID over network
+	Linux HID over network
 </h1>
 
 Linux HID over network — это проект, который был создан для пересылки событий пользовательских устройств ввода (мыши, клавиатуры, сенсорного экрана и т.д.) с одного устройства на другое.
