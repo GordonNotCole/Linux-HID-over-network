@@ -13,23 +13,29 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <malloc.h>
+#include <inttypes.h>
+
+#pragma pack(push, 1)
+#define EV_MAX_READ 64
+#define FD_STR_SIZE 32
 
 struct input_event ev[64];
-size_t ies = sizeof(struct input_event);
 struct sockaddr_in addr;
-unsigned int addrlen = sizeof(struct sockaddr_in);
 
-int sock_err(const char *function){
+int32_t ies = sizeof(struct input_event);
+uint32_t addrlen = sizeof(struct sockaddr_in);
 
-	int err = errno;
-	fprintf(stderr, "%s: socket error: %d\n", function, err);
+int32_t sock_err(const char *function){
+
+	int32_t err = errno;
+	fprintf(stderr, "%s: socket error: %" PRId32 "\n", function, err);
 	return 0;
 
 }
 
-int create_socket(int argc, char* argv[]){
+int32_t create_socket(int32_t argc, char* argv[]){
 
-	unsigned int ip_addr = INADDR_NONE;
+	uint32_t ip_addr = INADDR_NONE;
 
 	char *addr_str = argv[1]; //IP address + Port;
 	char *tmp = strtok(addr_str, ":"); //IP address;
@@ -46,7 +52,7 @@ int create_socket(int argc, char* argv[]){
 	if(tmp == NULL)
 		return sock_err("No port");
 
-	int fd = socket(AF_INET, SOCK_DGRAM, 0);
+	int32_t fd = socket(AF_INET, SOCK_DGRAM, 0);
 	
 	if(fd < 0)
 		return sock_err("socket");
@@ -63,9 +69,8 @@ int create_socket(int argc, char* argv[]){
 int main(int argc, char* argv[]){
 
 
-    size_t rb, wb, snd; 
-    int fd_socket;
-    int fd[100];
+    size_t rb;
+    int32_t fd_socket, fd[100];
 
     if(argc < 2)
 	    return sock_err("few arguments");
@@ -77,43 +82,40 @@ int main(int argc, char* argv[]){
     }
      
     char dev[50] = "/dev/input/";
-    int size_dev = strlen(dev);
+    int32_t size_dev = strlen(dev);
 
-    for(int i = 2; i < argc; i++){
-	    
-	    strcat(dev, argv[i]);
-	    if ((fd[i - 2] = open(dev, O_RDONLY)) < 0) {
-			printf("dev : %s\n", dev);
-	    	perror("evdev open");
+    for(size_t i = 2; i < argc; i++){
+	   
+	strcat(dev, argv[i]);
+	if ((fd[i - 2] = open(dev, O_RDONLY)) < 0) {
+		perror("evdev open");
 	    	exit(1);
-    	}
-	    dev[size_dev] = '\0';
+	}
+	dev[size_dev] = '\0';
 
     }
 	    
     fd_set rfd;
-    int nfds = fd[0];
+    int32_t nfds = fd[0];
     char num[32];
 
     while(1){
         
 		FD_ZERO(&rfd);
 	
-		for(int i = 0; i < argc - 2; i++){
+		for(size_t i = 0; i < argc - 2; i++){
 			FD_SET(fd[i], &rfd);
 			if(nfds < fd[i])
 				nfds = fd[i];
 		}
 	
 		if(select(nfds + 1, &rfd, 0, 0, NULL) > 0){
-			for(int i = 0; i < argc - 2; i++){
+			for(size_t i = 0; i < argc - 2; i++){
 				if(FD_ISSET(fd[i], &rfd)){
- 					rb = read(fd[i], ev, ies * 64);
-					sprintf(num, "%d", i);
-					snd = sendto(fd_socket, &num, 32, 0, (struct sockaddr*)&addr, addrlen);
-					//printf("sendto : %d\n", snd);
-					snd = sendto(fd_socket, &ev, rb, 0, (struct sockaddr*)&addr, addrlen);
-					//printf("sendto : %d\n", snd);
+ 					rb = read(fd[i], ev, ies * EV_MAX_READ);
+					sprintf(num, "%" PRId32, (int32_t)i);
+					sendto(fd_socket, &num, FD_STR_SIZE, 0, (struct sockaddr*)&addr, addrlen);
+					sendto(fd_socket, &ev, rb, 0, (struct sockaddr*)&addr, addrlen);
 				}
 			}
 		}
