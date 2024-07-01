@@ -19,13 +19,20 @@
 #pragma pack(push, 1)
 #define EV_MAX_READ 64
 #define FD_STR_SIZE 32
+#define FREV_SIZE 8
 
 struct input_event ev[64];
 int32_t ies = sizeof(struct input_event);
 
 struct recv_num_b{
-	int32_t num;
-	int32_t received;
+	uint32_t num;
+	uint32_t received;
+};
+
+struct frinput_event {
+	uint16_t type;
+	uint16_t code;
+	uint32_t value;
 };
 
 int32_t sock_err(const char *function){
@@ -60,13 +67,24 @@ int32_t create_socket(int32_t argc, char* argv[]){
 void recv_ev(int32_t fd, struct recv_num_b *recv_num_b){
 
 	struct sockaddr_in addr;
+	struct frinput_event frev[64];
+
 	uint32_t addrlen = sizeof(addr);
 	char num[32];
 
 	recvfrom(fd, &num, FD_STR_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
 	
 	recv_num_b->num = (int32_t)atoi(num);
-	recv_num_b->received = (int32_t)recvfrom(fd, &ev, ies * EV_MAX_READ, 0, (struct sockaddr*)&addr, &addrlen);
+	recv_num_b->received = (int32_t)recvfrom(fd, &frev, FREV_SIZE * EV_MAX_READ, 0, (struct sockaddr*)&addr, &addrlen);
+
+	uint32_t n = (uint32_t)(recv_num_b->received / FREV_SIZE);
+	recv_num_b->received = n;
+
+	for(size_t i = 0; i < n; i++){
+		ev[i].type = frev[i].type;
+		ev[i].code = frev[i].code;
+		ev[i].value = frev[i].value;
+	}
 
 }
 
@@ -103,7 +121,7 @@ int main(int argc, char* argv[]){
     while(1){
       
 		recv_ev(fd_socket, &recv_num_b);
-		write(fd[recv_num_b.num], &ev, recv_num_b.received);
+		write(fd[recv_num_b.num], &ev, ies * recv_num_b.received);
 
     }
 

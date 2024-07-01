@@ -18,12 +18,19 @@
 #pragma pack(push, 1)
 #define EV_MAX_READ 64
 #define FD_STR_SIZE 32
+#define FREV_SIZE 8
 
 struct input_event ev[64];
 struct sockaddr_in addr;
 
 int32_t ies = sizeof(struct input_event);
 uint32_t addrlen = sizeof(struct sockaddr_in);
+
+struct frinput_event {
+	uint16_t type;
+	uint16_t code;
+	uint32_t value;
+};
 
 int32_t sock_err(const char *function){
 
@@ -63,6 +70,22 @@ int32_t create_socket(int32_t argc, char* argv[]){
 	addr.sin_addr.s_addr = ip_addr;
 
 	return fd;
+
+}
+
+void send_ev(int32_t fd, const char *num, size_t rb){
+
+	struct frinput_event frev[64];
+	uint32_t n = (uint32_t)(rb / ies);
+
+	for(size_t i = 0; i < n; i++){
+		frev[i].type = (uint64_t)ev[i].type;
+		frev[i].code = (uint16_t)ev[i].code;
+		frev[i].value = (uint32_t)ev[i].value;
+	}
+	
+	sendto(fd, num, FD_STR_SIZE, 0, (struct sockaddr*)&addr, addrlen);
+	sendto(fd, &frev, n * FREV_SIZE, 0, (struct sockaddr*)&addr, addrlen);
 
 }
 
@@ -114,8 +137,7 @@ int main(int argc, char* argv[]){
 				if(FD_ISSET(fd[i], &rfd)){
  					rb = read(fd[i], ev, ies * EV_MAX_READ);
 					sprintf(num, "%" PRId32, (int32_t)i);
-					sendto(fd_socket, &num, FD_STR_SIZE, 0, (struct sockaddr*)&addr, addrlen);
-					sendto(fd_socket, &ev, rb, 0, (struct sockaddr*)&addr, addrlen);
+					send_ev(fd_socket, num, rb);
 				}
 			}
 		}
