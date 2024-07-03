@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <sys/select.h>
+#include <poll.h>
 #include <netdb.h>
 #include <errno.h>                   //CLIENT
 #include <string.h>                  //SEND EVENT TO SERVER
@@ -94,6 +94,7 @@ int main(int argc, char* argv[]){
 
     size_t rb;
     int32_t fd_socket, fd[100];
+    int32_t ret;
 
     if(argc < 2)
 	    return sock_err("few arguments");
@@ -118,29 +119,34 @@ int main(int argc, char* argv[]){
 
     }
 	    
-    fd_set rfd;
+  
+    struct pollfd fds[100];
     int32_t nfds = fd[0];
     char num[32];
 
+    for(size_t i = 0; i < argc - 2; i++){
+	    fds[i].fd = fd[i];
+	    fds[i].events = POLLIN;
+	    if(nfds < fd[i])
+		    nfds = fd[i];
+    }
+
     while(1){
-        
-		FD_ZERO(&rfd);
 	
-		for(size_t i = 0; i < argc - 2; i++){
-			FD_SET(fd[i], &rfd);
-			if(nfds < fd[i])
-				nfds = fd[i];
+	ret = poll(fds, nfds, NULL);
+	if(ret == -1){
+		perror("poll");
+		return 1;
+	}
+
+	for(size_t i = 0; i < argc - 2; i++){
+		if(fds[i].revents & POLLIN){
+ 			rb = read(fd[i], ev, ies * EV_MAX_READ);
+			sprintf(num, "%" PRId32, (int32_t)i);
+			send_ev(fd_socket, num, rb);
 		}
-	
-		if(select(nfds + 1, &rfd, 0, 0, NULL) > 0){
-			for(size_t i = 0; i < argc - 2; i++){
-				if(FD_ISSET(fd[i], &rfd)){
- 					rb = read(fd[i], ev, ies * EV_MAX_READ);
-					sprintf(num, "%" PRId32, (int32_t)i);
-					send_ev(fd_socket, num, rb);
-				}
-			}
-		}
+	}
+    
     }
 
 
